@@ -4,6 +4,8 @@ import numpy as np
 import pickle as pkl
 import soundfile as sf
 
+TEST_SPLIT = 0.2
+
 
 training_data = []
 for file in os.listdir("LibriSpeech"):
@@ -20,7 +22,8 @@ for file in os.listdir("LibriSpeech"):
                  20, 512, 0, None, 0.97, 22, True)
             training_data.append((mfcc_features, transcript))
 
-# store the feature vectors - shape (20, N)
+# store the feature vectors - list of N
+# each element of shape (L*, F)
 x = np.array([e[0] for e in training_data])
 print(x.shape)
 
@@ -73,3 +76,24 @@ np.save('data/training_labels_preprocessed', y)
 
 # log
 print('Saved preprocessed training labels')
+
+# zip the data and patterns into dataset
+# x: N * (L*, F)
+# y: N * L*
+dataset = list(zip(x, y))
+dataset = np.random.permutation(dataset)
+
+# split into training and testing
+test_size = int(TEST_SPLIT * len(dataset))
+dataset_test = dataset[:test_size]
+dataset_train = dataset[test_size:]
+x_train = np.array([e[0] for e in dataset_train])
+x_test = np.array([e[0] for e in dataset_test])
+y_train = np.array([e[1] for e in dataset_train])
+y_test = np.array([e[1] for e in dataset_test])
+
+# save the split training and testing data
+np.save('data/training_data_preprocessed', x_train)
+np.save('data/testing_data_preprocessed', x_test)
+np.save('data/training_labels_preprocessed', y_train)
+np.save('data/testing_labels_preprocessed', y_test)
