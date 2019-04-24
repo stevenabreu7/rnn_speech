@@ -71,7 +71,7 @@ with open("tools/dec_map.pkl","wb") as f:
 # list of lists (different lengths, integers)
 y_list = [[enc_map[ch] for ch in list(e[1])] for e in training_data]
 # append the <eos> symbol to each list
-y_list = [e + str(len(alphabet)) for e in y_list]
+y_list = [e + [len(alphabet)] for e in y_list]
 
 # save the final preprocessed labels
 y = np.array(y_list)
