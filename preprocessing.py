@@ -1,6 +1,7 @@
 from python_speech_features import base
 import os
 import numpy as np
+import pickle as pkl
 import soundfile as sf
 
 
@@ -19,19 +20,56 @@ for file in os.listdir("LibriSpeech"):
                  20, 512, 0, None, 0.97, 22, True)
             training_data.append((mfcc_features, transcript))
 
-signal, fs = sf.read('LibriSpeech/84-121123-0000.flac')
-mfcc_features = base.mfcc(signal, fs, 0.025, 0.01, 13,
-                 20, 512, 0, None, 0.97, 22, True)
-print(len(mfcc_features))
-
-
 # store the feature vectors - shape (20, N)
 x = np.array([e[0] for e in training_data])
 print(x.shape)
 
-# store the data
-np.save('training_data_preprocessed', x)
+# save the data
+np.save('data/training_data_preprocessed', x)
 
-# store the labels (as strings
+# log
+print('Saved preprocessed training data')
+
+# store the labels (raw as strings)
 with open('training_labels_raw.txt', 'w') as f:
     f.write(''.join([e[1] for e in training_data]))
+
+# log
+print('Saved raw training labels')
+
+# one hot encoding for the characters of the labels
+# didn't find a library, so doing it manually (might take
+# a while running it)
+
+# list of all possible characters
+alphabet = list(set(''.join([e[1] for e in training_data])))
+
+# save the encoding and decoding map
+enc_map = {e : i for i, e in enumerate(alphabet)}
+dec_map = {i : e for i, e in enumerate(alphabet)}
+# <eos> symbol
+dec_map[len(alphabet)] = ''
+
+# save the encoding and decoding maps
+if not os.path.exists('tools'):
+    os.makedirs('tools')
+with open("tools/enc_map.pkl","wb") as f:
+    pkl.dump(enc_map, f)
+    # log
+    print('Saved encoding map.')
+with open("tools/dec_map.pkl","wb") as f:
+    pkl.dump(dec_map, f)
+    # log
+    print('Saved decoding map.')
+
+# list of lists (different lengths, integers)
+y_list = [[enc_map[ch] for ch in list(e[1])] for e in training_data]
+# append the <eos> symbol to each list
+y_list = [e + str(len(alphabet)) for e in y_list]
+
+# save the final preprocessed labels
+y = np.array(y_list)
+np.save('data/training_labels_preprocessed', y)
+
+# log
+print('Saved preprocessed training labels')
