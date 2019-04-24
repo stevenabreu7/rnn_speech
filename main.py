@@ -5,6 +5,7 @@ import model
 # TODO correct output size (check the maps in `tools`)
 # TODO correct hidden size (trial and error? research?)
 rnn = model.RecurrentModel(13, 500, 5, 30)
+print(rnn.parameters())
 
 # initializer data loaders
 val_loader = data.val_loader()
