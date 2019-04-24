@@ -109,5 +109,3 @@ def val_loader():
                                 sorting=True)
     val_loader = DataLoader(val_dataset, batch_size=32, shuffle=True, collate_fn=collate_unpadded)
     return val_loader
-
-speechDataset = SpeechDataset('data', 'training_data')
