@@ -1,7 +1,7 @@
 import os
+import numpy as np
 import torch
 from torch import nn
-from warpctc_pytorch import CTCLoss
 
 
 class RecurrentModel(nn.Module):
@@ -24,11 +24,19 @@ class RecurrentModel(nn.Module):
         self.softmax = nn.Softmax()
     
     def forward(self, x):
+        # x: batch_size, length, n_features
         hidden = None
         rnn_output, hidden = self.recurrent(x, hidden)
+        # rnn_output: batch_size, length, n_hidden
+        # hidden: 5, length, n_hidden
         rnn_output_flat = rnn_output.view(-1, self.hidden_size)
+        # rnn_output_flat: batch_size*length, n_hidden
         lin_output = self.output(rnn_output_flat)
-        output = self.softmax(lin_output)
+        # lin_output: batch_size*length, n_out
+        output_flat = self.softmax(lin_output)
+        # output_flat: batch_size*length, n_out
+        output = output_flat.view(rnn_output.size(0), rnn_output.size(1), output_flat.size(1))
+        # output: batch_size, length, n_out
 
         return output
 
@@ -49,7 +57,7 @@ class ModelTrainer():
             self.model = self.model.cuda()
         
         self.optimizer = torch.optim.SGD(self.model.parameters(), lr=0.004)
-        self.criterion = CTCLoss()
+        self.criterion = nn.CTCLoss()
   
     def train(self):
 
@@ -79,10 +87,12 @@ class ModelTrainer():
             targets = targets.cuda()
         
         outputs = self.model(inputs)
-        outputs = outputs.view(-1, outputs.size(2))
-        targets = targets.view(-1).type(torch.LongTensor)
+        targets = targets.type(torch.LongTensor)
 
-        loss = self.criterion(outputs, targets)
+        input_lens = np.sum(inputs.detach().numpy()[:,:,0] != -1, axis=1)
+        targets_lens = np.sum(targets.detach().numpy() != -1, axis=1)
+
+        loss = self.criterion(outputs.permute(1,0,2), targets, tuple(input_lens), tuple(targets_lens))
 
         self.optimizer.zero_grad()
         loss.backward()

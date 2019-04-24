@@ -50,8 +50,8 @@ def collate_padded(l):
     x, y = zip(*l)
     x, y = list(x), list(y)
     # padding
-    x = rnn.pad_sequence(x, batch_first=True, padding_value=0)
-    y = rnn.pad_sequence(y, batch_first=True, padding_value=0)
+    x = rnn.pad_sequence(x, batch_first=True, padding_value=-1)
+    y = rnn.pad_sequence(y, batch_first=True, padding_value=-1)
     # make sure the sequence lengths for the input are all 
     # multiples of 8
     if x.size(1) % 8 != 0:
@@ -84,9 +84,9 @@ def train_loader():
             T is the length of the label, variable
     """
     train_dataset = SpeechDataset('data/training_data_preprocessed.npy',
-                                  'data/training_labels_proprocessed.npy',
+                                  'data/training_labels_preprocessed.npy',
                                   sorting=True)
-    train_loader = DataLoader(train_dataset, batch_size=32, shuffle=True, collate_fn=collate_unpadded)
+    train_loader = DataLoader(train_dataset, batch_size=32, shuffle=True, collate_fn=collate_padded)
     return train_loader
 
 def val_loader():
@@ -105,7 +105,7 @@ def val_loader():
             T is the length of the label, variable
     """
     val_dataset = SpeechDataset('data/testing_data_preprocessed.npy',
-                                'data/testing_labels_proprocessed.npy',
+                                'data/testing_labels_preprocessed.npy',
                                 sorting=True)
-    val_loader = DataLoader(val_dataset, batch_size=32, shuffle=True, collate_fn=collate_unpadded)
+    val_loader = DataLoader(val_dataset, batch_size=32, shuffle=True, collate_fn=collate_padded)
     return val_loader
