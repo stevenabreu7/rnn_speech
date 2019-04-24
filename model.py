@@ -48,7 +48,7 @@ class ModelTrainer():
         if self.gpu:
             self.model = self.model.cuda()
         
-        self.optimizer = torch.optim.Adam(self.model.parameters(), lr=1e-3)
+        self.optimizer = torch.optim.SGD(self.model.parameters(), lr=0.004)
         self.criterion = CTCLoss()
   
     def train(self):
