@@ -6,6 +6,11 @@ import soundfile as sf
 
 TEST_SPLIT = 0.2
 
+# create necessary directories
+if not os.path.exists('tools'):
+    os.makedirs('tools')
+if not os.path.exists('data'):
+    os.makedirs('data')
 
 training_data = []
 for file in os.listdir("LibriSpeech"):
@@ -54,8 +59,6 @@ dec_map = {i : e for i, e in enumerate(alphabet)}
 dec_map[len(alphabet)] = ''
 
 # save the encoding and decoding maps
-if not os.path.exists('tools'):
-    os.makedirs('tools')
 with open("tools/enc_map.pkl","wb") as f:
     pkl.dump(enc_map, f)
     # log
