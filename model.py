@@ -52,24 +52,27 @@ class ModelTrainer():
         self.criterion = CTCLoss()
   
     def train(self):
-        self.model.train()
 
-        epoch_loss = 0
+        for _ in range(self.epoch, self.n_epochs):
 
-        for batch_idx, (inputs, targets) in enumerate(self.train_loader):
-            print('\rBatch {:03}/{:03}'.format(batch_idx+1, len(self.train_loader)), end='')
-            epoch_loss += self.train_batch(inputs, targets)
+            self.model.train()
+
+            epoch_loss = 0
+
+            for batch_idx, (inputs, targets) in enumerate(self.train_loader):
+                print('\rBatch {:03}/{:03}'.format(batch_idx+1, len(self.train_loader)), end='')
+                epoch_loss += self.train_batch(inputs, targets)
+            
+            epoch_loss = epoch_loss / len(self.train_loader)
+
+            self.train_losses.append(epoch_loss)
+
+            self.epoch += 1
+
+            print('\r[TRAIN] Epoch {:02}/{:02} Loss {:7.4f}'.format(
+                self.epoch, self.n_epochs, epoch_loss
+            ), end='\t')
         
-        epoch_loss = epoch_loss / len(self.train_loader)
-
-        self.train_losses.append(epoch_loss)
-
-        self.epoch += 1
-
-        print('\r[TRAIN] Epoch {:02}/{:02} Loss {:7.4f}'.format(
-            self.epoch, self.n_epochs, epoch_loss
-        ), end='\t')
-    
     def train_batch(self, inputs, targets):
         if self.gpu:
             inputs = inputs.cuda()
