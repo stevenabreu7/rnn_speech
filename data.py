@@ -53,7 +53,7 @@ def collate_padded(l):
     x = rnn.pad_sequence(x, batch_first=True, padding_value=0)
     y = rnn.pad_sequence(y, batch_first=True, padding_value=0)
     # make sure the sequence lengths for the input are all 
-    # multiples of 8 because of the pBLSTMs.
+    # multiples of 8
     if x.size(1) % 8 != 0:
         pad_len = (x.size(1) // 8 + 1) * 8 - x.size(1)
         x = F.pad(x, (0, 0, 0, pad_len))
@@ -104,7 +104,9 @@ def val_loader():
             B is the batch size, here B=64
             T is the length of the label, variable
     """
-    val_dataset = SpeechDataset('data', 'dev', 'l', sorting=True)
+    val_dataset = SpeechDataset('data/testing_data_preprocessed.npy',
+                                'data/testing_labels_proprocessed.npy',
+                                sorting=True)
     val_loader = DataLoader(val_dataset, batch_size=32, shuffle=True, collate_fn=collate_unpadded)
     return val_loader
 
