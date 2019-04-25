@@ -2,6 +2,7 @@ import os
 import numpy as np
 import torch
 from torch import nn
+from timeit import default_timer as timer
 
 
 class RecurrentModel(nn.Module):
@@ -21,8 +22,8 @@ class RecurrentModel(nn.Module):
         self.output = nn.Linear(in_features=self.hidden_size,
                                 out_features=self.output_size,
                                 bias=True)
-        self.softmax = nn.Softmax()
-    
+        self.softmax = nn.LogSoftmax()
+
     def forward(self, x):
         # x: batch_size, length, n_features
         hidden = None
@@ -55,51 +56,62 @@ class ModelTrainer():
 
         if self.gpu:
             self.model = self.model.cuda()
-        
-        self.optimizer = torch.optim.SGD(self.model.parameters(), lr=0.004)
+
+        self.optimizer = nn.optim.SGD(self.model.parameters(), lr=0.008)
         self.criterion = nn.CTCLoss()
-  
+        self.scheduler = nn.optim.lr_scheduler.StepLR(self.optimizer, step_size=1, gamma=0.5)
+
     def train(self):
 
         for _ in range(self.epoch, self.n_epochs):
-
+            start = timer()
             self.model.train()
 
             epoch_loss = 0
 
             for batch_idx, (inputs, targets) in enumerate(self.train_loader):
-                print('\rBatch {:03}/{:03}'.format(batch_idx+1, len(self.train_loader)), end='')
+                print('\rBatch {:03}/{:03} Current Loss: {:7.4f}'.format(batch_idx + 1, len(self.train_loader),
+                                                                         epoch_loss), end='')
                 epoch_loss += self.train_batch(inputs, targets)
-            
+
             epoch_loss = epoch_loss / len(self.train_loader)
 
             self.train_losses.append(epoch_loss)
 
             self.epoch += 1
-
+            end = timer()
             print('\r[TRAIN] Epoch {:02}/{:02} Loss {:7.4f}'.format(
                 self.epoch, self.n_epochs, epoch_loss
             ), end='\t')
-        
+            print('Time elapsed: {}'.format(end-start))
+            self.scheduler.step()
+
     def train_batch(self, inputs, targets):
         if self.gpu:
             inputs = inputs.cuda()
             targets = targets.cuda()
-        
         outputs = self.model(inputs)
-        targets = targets.type(torch.LongTensor)
+        print(inputs[0])
+        print(outputs[0])
+        print(targets[0])
 
+        targets = targets.type(torch.LongTensor)
         input_lens = np.sum(inputs.detach().numpy()[:,:,0] != -1, axis=1)
         targets_lens = np.sum(targets.detach().numpy() != -1, axis=1)
 
-        loss = self.criterion(outputs.permute(1,0,2), targets, tuple(input_lens), tuple(targets_lens))
-
+        loss = self.criterion(outputs.permute(1, 0, 2), targets, tuple(input_lens), tuple(targets_lens))
+        print(loss)
         self.optimizer.zero_grad()
         loss.backward()
+
+        #
+
         self.optimizer.step()
 
-        return loss.detach().cpu().item()
-    
+        return_loss = loss.detach().cpu().item()
+
+        return return_loss
+
     def save(self):
         torch.save(
             {'state_dict': self.model.state_dict()},

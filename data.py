@@ -1,7 +1,5 @@
-import os
 import torch
-import numpy as np 
-import matplotlib.pyplot as plt
+import numpy as np
 import torch.nn.utils.rnn as rnn
 import torch.nn.functional as F
 from torch.utils.data import DataLoader
@@ -33,44 +31,47 @@ class SpeechDataset(Dataset):
             self.X[i] = torch.Tensor(self.X[i])
         for i in range(len(self.y)):
             self.y[i] = torch.Tensor(self.y[i])
-    
+
     def __getitem__(self, i):
         return self.X[i], self.y[i]
-    
+
     def __len__(self):
         return len(self.X)
 
+
 def collate_padded(l):
     """
-      Called by the data loader when collating lines. 
-      Pad the sequences with zeros to turn them into a 3D tensor with 
+      Called by the data loader when collating lines.
+      Pad the sequences with zeros to turn them into a 3D tensor with
       the second dimension representing the time (i.e. the length of
       the sequence). This is ensured to be divisible by eight.
     """
     x, y = zip(*l)
     x, y = list(x), list(y)
     # padding
-    x = rnn.pad_sequence(x, batch_first=True, padding_value=-1)
-    y = rnn.pad_sequence(y, batch_first=True, padding_value=-1)
-    # make sure the sequence lengths for the input are all 
+    x = rnn.pad_sequence(x, batch_first=True, padding_value=0)
+    y = rnn.pad_sequence(y, batch_first=True, padding_value=29)
+    # make sure the sequence lengths for the input are all
     # multiples of 8
     if x.size(1) % 8 != 0:
         pad_len = (x.size(1) // 8 + 1) * 8 - x.size(1)
         x = F.pad(x, (0, 0, 0, pad_len))
     return x, y
 
+
 def collate_unpadded(l):
     """
-      Called by the data loader when collating lines. 
+      Called by the data loader when collating lines.
       Only return the lists, don't pad anything.
     """
     x, y = zip(*l)
     x, y = list(x), list(y)
     return x, y
 
+
 def train_loader():
     """
-      Loads the training data (letter wise). 
+      Loads the training data (letter wise).
       Returns:
         DataLoader object that yields pairs of data and labels.
         Data:
@@ -88,6 +89,7 @@ def train_loader():
                                   sorting=True)
     train_loader = DataLoader(train_dataset, batch_size=32, shuffle=True, collate_fn=collate_padded)
     return train_loader
+
 
 def val_loader():
     """

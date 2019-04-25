@@ -6,11 +6,6 @@ import soundfile as sf
 
 TEST_SPLIT = 0.2
 
-# create necessary directories
-if not os.path.exists('tools'):
-    os.makedirs('tools')
-if not os.path.exists('data'):
-    os.makedirs('data')
 
 training_data = []
 for file in os.listdir("LibriSpeech"):
@@ -20,7 +15,7 @@ for file in os.listdir("LibriSpeech"):
             separated = line.split(' ', 1)
             file_name = 'LibriSpeech/' + separated[0] + '.flac'
             transcript = separated[1]
-            print(transcript)
+
             signal, fs = sf.read(file_name)
 
             mfcc_features = base.mfcc(signal, fs, 0.025, 0.01, 13,
@@ -59,6 +54,8 @@ dec_map = {i : e for i, e in enumerate(alphabet)}
 dec_map[len(alphabet)] = ''
 
 # save the encoding and decoding maps
+if not os.path.exists('tools'):
+    os.makedirs('tools')
 with open("tools/enc_map.pkl","wb") as f:
     pkl.dump(enc_map, f)
     # log
@@ -69,9 +66,10 @@ with open("tools/dec_map.pkl","wb") as f:
     print('Saved decoding map.')
 
 # list of lists (different lengths, integers)
-y_list = [[enc_map[ch] for ch in list(e[1])] for e in training_data]
+y_list = [[enc_map[ch] + 1 for ch in list(e[1])] for e in training_data]
 # append the <eos> symbol to each list
 y_list = [e + [len(alphabet)] for e in y_list]
+print(len(alphabet))
 
 # save the final preprocessed labels
 y = np.array(y_list)
